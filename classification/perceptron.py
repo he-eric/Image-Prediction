@@ -44,13 +44,16 @@ class PerceptronClassifier:
     self.features = trainingData[0].keys() # could be useful later
     # DO NOT ZERO OUT YOUR WEIGHTS BEFORE STARTING TRAINING, OR
     # THE AUTOGRADER WILL LIKELY DEDUCT POINTS.
-    
+    counter = util.Counter()
     for iteration in range(self.max_iterations):
       print "Starting iteration ", iteration, "..."
       for i in range(len(trainingData)):
-          "*** YOUR CODE HERE ***"
-          util.raiseNotDefined()
-    
+        for j in self.legalLabels:
+          counter[j] = trainingData[i].__mul__(self.weights[j])
+        if not trainingLabels[i] == counter.argMax():
+          self.weights[trainingLabels[i]].__radd__(trainingData[i])
+          self.weights[counter.argMax()].__sub__(trainingData[i])
+
   def classify(self, data ):
     """
     Classifies each datum as the label that most closely matches the prototype vector
@@ -66,15 +69,13 @@ class PerceptronClassifier:
       guesses.append(vectors.argMax())
     return guesses
 
-  
   def findHighWeightFeatures(self, label):
     """
     Returns a list of the 100 features with the greatest weight for some label
     """
-    featuresWeights = []
-
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    featuresWeights = self.weights[label].values()
+    #"*** YOUR CODE HERE ***"
+    #util.raiseNotDefined()
 
     return featuresWeights
 
