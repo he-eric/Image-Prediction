@@ -17,7 +17,12 @@ import samples
 import sys
 import util
 
-TEST_SET_SIZE = 1000
+# Faces max training size = 451
+# Faces max testing size = 100
+# Digits max training size = 5000
+# Digits max testing size = 1000
+
+TEST_SET_SIZE = 100
 DIGIT_DATUM_HEIGHT=28
 DIGIT_DATUM_WIDTH=28
 FACE_DATUM_WIDTH=60
@@ -313,15 +318,15 @@ def runClassifier(args, options):
   if(options.data=="faces"):
     rawTrainingData = samples.loadDataFile("facedata/facedatatrain", numTraining,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
     trainingLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTraining)
-    rawValidationData = samples.loadDataFile("facedata/facedatatrain", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
-    validationLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTest)
+    #rawValidationData = samples.loadDataFile("facedata/facedatatrain", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
+    #validationLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTest)
     rawTestData = samples.loadDataFile("facedata/facedatatest", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
     testLabels = samples.loadLabelsFile("facedata/facedatatestlabels", numTest)
   else:
     rawTrainingData = samples.loadDataFile("digitdata/trainingimages", numTraining,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
     trainingLabels = samples.loadLabelsFile("digitdata/traininglabels", numTraining)
-    rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
-    validationLabels = samples.loadLabelsFile("digitdata/validationlabels", numTest)
+    #rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+    #validationLabels = samples.loadLabelsFile("digitdata/validationlabels", numTest)
     rawTestData = samples.loadDataFile("digitdata/testimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
     testLabels = samples.loadLabelsFile("digitdata/testlabels", numTest)
     
@@ -329,21 +334,22 @@ def runClassifier(args, options):
   # Extract features
   print "Extracting features..."
   trainingData = map(featureFunction, rawTrainingData)
-  validationData = map(featureFunction, rawValidationData)
+
+  #validationData = map(featureFunction, rawValidationData)
   testData = map(featureFunction, rawTestData)
 
-  print featureFunction
+  #print featureFunction
 
   # Conduct training and testing
   print "Training..."
-  classifier.train(trainingData, trainingLabels, validationData, validationLabels)
-  print "Validating..."
-  guesses = classifier.classify(validationData)
-  print "guesses..."
+  classifier.train(trainingData, trainingLabels, trainingData, trainingLabels)
+  #print "Validating..."
+  #guesses = classifier.classify(validationData)
+  #print "guesses..."
   # print guesses
   # print ""
-  correct = [guesses[i] == validationLabels[i] for i in range(len(validationLabels))].count(True)
-  print str(correct), ("correct out of " + str(len(validationLabels)) + " (%.1f%%).") % (100.0 * correct / len(validationLabels))
+  #correct = [guesses[i] == validationLabels[i] for i in range(len(validationLabels))].count(True)
+  #print str(correct), ("correct out of " + str(len(validationLabels)) + " (%.1f%%).") % (100.0 * correct / len(validationLabels))
   print "Testing..."
   guesses = classifier.classify(testData)
   correct = [guesses[i] == testLabels[i] for i in range(len(testLabels))].count(True)

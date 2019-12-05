@@ -19,23 +19,27 @@ def countLabel(trainingLabels):
   return labelCounter
 
 def sortDatum(trainingData, trainingLabels, legalLabels):
-  """
-  Sort datums into a dict
-    Key ===== Value
-    Map labels face -> { datum1_features, datum2_features...}
-    Map labels with digit -> {...}
-  """
+  # INITIALIZE sortedDatums AS A EMPTY DICTIONARY
   sortedDatums = {}
+
+  # INITIALIZE sortedDatums WITH KEYS AND ASSIGN EMPTY LISTS TO EACH KEY
   for i in range(len(legalLabels)):
     sortedDatums[i] = []
+
+  # APPEND EACH DATUM IN THE TRAINING DATA TO THE CORRECT LIST USING THE DATUM'S LABEL AS KEY
   intLabelIndex = 0
   for datum in trainingData:
     intLabel = trainingLabels[intLabelIndex]
     sortedDatums[intLabel].append(datum)
     intLabelIndex+=1
+
+  # RETURN A DICTIONARY OF SORTED DATUMS
   return sortedDatums
 
-def generateFeatureCounterForDigits(labelDatums, features, value):
+# labelDatums - LIST OF DATUMS WITH LABEL 'X'
+# features - LIST OF ALL POSSIBLE FEATURES
+# value - VALUE TO MEASURE
+def generateFeatureCounter(labelDatums, features, value):
   """
   Given a list of datums belonging to the same digit, create a counter for the value given
   In other words, return a data structure that stores the count for each feature
@@ -50,95 +54,89 @@ def generateFeatureCounterForDigits(labelDatums, features, value):
    | ....     |________...__________|
    | FeatureN |________x____________|
   """
+  # INITIALIZE THE COUNTER
   featureCounter = util.Counter()
+
+  # INITIALIZE THE 'KEYS'
   for feature in features:
     featureCounter[feature]
+
+  # START COUNTING THE NUMBER OF FEATURES WITH GIVEN VALUE
   for datum in labelDatums:
     for feature in datum:
       if datum[feature] == value:
         featureCounter[feature] += 1
+
+  # RETURN A DICTIONARY/COUNTER THAT COUNTS THE NUMBER OF DATUMS FOR EACH FEATURE WITH THE GIVEN VALUE
   return featureCounter
 
-def generateFeatureCounterForFaces(labelDatums, features, value1, value2):
-  featureCounter = util.Counter()
-  for feature in features:
-    featureCounter[feature] = 1
-  for datum in labelDatums:
-    for feature in datum:
-      if datum[feature] == value1:
-        featureCounter[feature] += 1
-  return featureCounter
-
-def generateProbTableForDigits(labelDatums, features):
-  featureCounter0 = generateFeatureCounterForDigits(labelDatums, features, 0)
-  featureCounter1 = generateFeatureCounterForDigits(labelDatums, features, 1)
-  featureCounter2 = generateFeatureCounterForDigits(labelDatums, features, 2)
+# labelDatums - LIST OF DATUMS CORRESPONDING TO A SPECIFIC LABEL 'X'
+# features - LIST OF ALL POSSIBLE FEATURES
+def generateProbTable(labelDatums, features):
+  # GENERATE THE COUNT FOR EACH FEATURE WITH VALUE 0
+  featureCounter0 = generateFeatureCounter(labelDatums, features, 0)
+  # GENERATE THE COUNT FOR EACH FEATURE WITH VALUE 1
+  featureCounter1 = generateFeatureCounter(labelDatums, features, 1)
+  # GENERATE THE COUNT FOR EACH FEATURE WITH VALUE 2
+  featureCounter2 = generateFeatureCounter(labelDatums, features, 2)
+  # COMBINE THE COUNT FOR FEATURES WITH VALUES 1 OR 2
   featureCounter1.__radd__(featureCounter2)
+
+  # CALCULATE THE PROBABILITY
+  # PROBABILITY OF FEATURE = #_OF_DATUMS_WITH_FEATURE_WITH_VALUE_NOT_0 / #_TOTAL_NUMBER_OF_DATUMS_WITH_LABEL_X
   for feature in features:
+
+    # ACCOUNT FOR 0 PROBABILITY
     if featureCounter0[feature] == 0:
-      featureCounter0[feature] = 0
+      featureCounter0[feature] = 1
     if featureCounter1[feature] == 0:
-      featureCounter1[feature] = 0
-    # print str(featureCounter0[feature]) + ", " + str(featureCounter1[feature])
+      featureCounter1[feature] = 1
+
     featureCounter0[feature] = (featureCounter0[feature]+K) / float(len(labelDatums)+K)
     featureCounter1[feature] = (featureCounter1[feature]+K) / float(len(labelDatums)+K)
-    # print str(featureCounter0[feature]) + ", " + str(featureCounter1[feature])
+
+  # RETURN A LIST OF 2 COUNTERS
+  # ONLY FOR DATUMS WITH LABEL 'X'
+  # FIRST COUNTER - PROBABILITY OF FEATURE WITH VALUE 0
+  # SECOND COUNTER - PROBABILITY OF FEATURE WITH VALUE NOT 0
   return [featureCounter0, featureCounter1]
 
-def generateProbTableForFaces(labelDatums, features):
-  featureCounter5 = generateFeatureCounterForFaces(labelDatums, features, 0, 5)
-  featureCounter10 = generateFeatureCounterForFaces(labelDatums, features, 5, 10)
-  featureCounter15 = generateFeatureCounterForFaces(labelDatums, features, 10, 15)
-  featureCounter20 = generateFeatureCounterForFaces(labelDatums, features, 15, 20)
-  featureCounter25 = generateFeatureCounterForFaces(labelDatums, features, 20, 25)
-  for feature in features:
-    featureCounter5[feature] = (featureCounter5[feature] / float(len(labelDatums)))
-    featureCounter10[feature] = (featureCounter10[feature] / float(len(labelDatums)))
-    featureCounter15[feature] = (featureCounter15[feature] / float(len(labelDatums)))
-    featureCounter20[feature] = (featureCounter20[feature] / float(len(labelDatums)))
-    featureCounter25[feature] = (featureCounter25[feature] / float(len(labelDatums)))
-  return [featureCounter5, featureCounter10, featureCounter15, featureCounter20, featureCounter25]
-
-def calculateLabelLogProbForDigits(datum, label, probTables):
+# datum - TESTING DATUM
+# label - PROBABILITY OF THIS DATUM BEING TH LABEL 'X'
+# probTables - LIST OF PROBABILITY TABLES
+def calculateLabelLogProb(datum, label, probTables):
+  # INITIALIZE THE PROB TO 0.0
   floatLabelLogProb = 0.0
+
+  # GET THE RIGHT PROBABILITY TABLE IN THE LIST OF PROBABILITY TABLES
   labelProbTable = probTables[label]
+
+  # ADD ALL LOG PROBABILITIES
   for feature in datum:
+    # VALUE AT THIS FEATURE
     intPixelValue = datum[feature]
     if (intPixelValue == 0):
+      # IF VALUE AT THIS FEATURE/PIXEL EQUALS 0
+      # GET THE PROBILITY OF LABEL 'X' WITH THIS FEATURE/PIXEL EQUAL TO 0
       floatProb = labelProbTable[0][feature]
-      floatLogProb = abs(math.log(floatProb, 10))
+
+      # TRANSFORM THE PROBABILITY WITH LOG
+      floatLogProb = math.log(floatProb, 10)
+
+      # SUM THE LOG PROBABILITIES
       floatLabelLogProb = floatLabelLogProb + floatLogProb
     else:
+      # IF VALUE AT THIS FEATURE/PIXEL EQUALS NOT 0
+      # GET THE PROBILITY OF LABEL 'X' WITH THIS FEATURE/PIXEL EQUAL TO NOT 0
       floatProb = labelProbTable[1][feature]
-      floatLogProb = abs(math.log(floatProb, 10))
-      floatLabelLogProb = floatLabelLogProb + floatLogProb
-  return floatLabelLogProb
 
-def calculateLabelLogProbForFaces(datum, label, probTables):
-  floatLabelLogProb = 1.0
-  labelProbTable = probTables[label]
-  for feature in datum:
-    intPixelCount = datum[feature]
-    if intPixelCount < 5:
-      floatProb = labelProbTable[0][feature]
-      floatLogProb = abs(math.log(floatProb, 10))
-      floatLabelLogProb = floatLabelLogProb * floatProb
-    elif intPixelCount < 10:
-      floatProb = labelProbTable[1][feature]
-      floatLogProb = abs(math.log(floatProb, 10))
-      floatLabelLogProb = floatLabelLogProb * floatProb
-    elif intPixelCount < 15:
-      floatProb = labelProbTable[2][feature]
-      floatLogProb = abs(math.log(floatProb, 10))
-      floatLabelLogProb = floatLabelLogProb * floatProb
-    elif intPixelCount < 20:
-      floatProb = labelProbTable[3][feature]
-      floatLogProb = abs(math.log(floatProb, 10))
-      floatLabelLogProb = floatLabelLogProb * floatProb
-    elif intPixelCount <= 25:
-      floatProb = labelProbTable[4][feature]
-      floatLogProb = abs(math.log(floatProb, 10))
-      floatLabelLogProb = floatLabelLogProb * floatProb
+      # TRANSFORM THE PROBABILITY WITH LOG
+      floatLogProb = math.log(floatProb, 10)
+
+      # SUM THE LOG PROBABILITIES
+      floatLabelLogProb = floatLabelLogProb + floatLogProb
+
+  # RETURN THE LOG PROBABILITY THAT THE DATUM IS LABEL 'X'
   return floatLabelLogProb
 
 def printProbTables(probTables):
@@ -194,46 +192,22 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
     self.trainAndTune(trainingData, trainingLabels, validationData, validationLabels, kgrid)
       
   def trainAndTune(self, trainingData, trainingLabels, validationData, validationLabels, kgrid):
-    """
-    Trains the classifier by collecting counts over the training data, and
-    stores the Laplace smoothed estimates so that they can be used to classify.
-    Evaluate each value of k in kgrid to choose the smoothing parameter 
-    that gives the best accuracy on the held-out validationData.
-    
-    trainingData and validationData are lists of feature Counters.  The corresponding
-    label lists contain the correct label for each datum.
-    
-    To get the list of all possible features or labels, use self.features and 
-    self.legalLabels.
-
-    For digits 0-9 create a table
-    For digit 0
-    Count all labels with 0
-    Make a table for digit 0
-    Make 784 features as rows for the table
-    Make 2 values as columns for the table 0 or 1
-    For each pixel/feature calculate the probability
-      For each datum, look at pixel i, see if it is 0 or 1
-      Number of digit 0s with pixel i as 0 / Number of digit 0s = probability for value 0 at pixel i
-      Number of digit 0s with pixel i as 1 / Number of digit 0s = probability for value 1 at pixel i
-
-    For faces...
-    ...
-    """
 
     "*** YOUR CODE HERE ***"
+    # SET THE SIZE OF THE TRAINING DATA
     self.size = len(trainingData)
+    # SET THE TRAINING LABELS
     self.trainingLabels = trainingLabels
+    # SORT THE TRAINING DATA
+    # sortedDatums is a DICTIONARY
+    # KEYS are LABELS --- VALUES are a LIST OF DIGITS/FACES corresponding to the label
     sortedDatums = sortDatum(trainingData, trainingLabels, self.legalLabels)
-    if len(self.legalLabels) == 10:
-      for key in sortedDatums:
-        table = generateProbTableForDigits(sortedDatums[key], self.features)
-        self.probabilityTables.append(table)
-    else:
-      for key in sortedDatums:
-        table = generateProbTableForFaces(sortedDatums[key], self.features)
-        self.probabilityTables.append(table)
 
+    if len(self.legalLabels) > 1:
+      # GENERATE A PROB TABLE FOR EACH LABEL (EG: 9 tables for digits; 2 tables for faces)
+      for key in sortedDatums:
+        table = generateProbTable(sortedDatums[key], self.features)
+        self.probabilityTables.append(table)
         
   def classify(self, testData):
     """
@@ -248,7 +222,8 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
       guesses.append(posterior.argMax())
       self.posteriors.append(posterior)
     return guesses
-      
+
+  # datum - DIGIT/FACE TO BE PREDICTED
   def calculateLogJointProbabilities(self, datum):
     """
     Returns the log-joint distribution over legal labels and the datum.
@@ -257,34 +232,23 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
     
     To get the list of all possible features or labels, use self.features and 
     self.legalLabels.
-
-    For digits
-    For digit 0
-      Get the value at each pixel 0 or 1
-      Reference the table created from training
-      Get the probability of each pixel
-      Multiply them all
-      Put into logJoint
-    Do for all digits
     """
     logJoint = util.Counter()
     "*** YOUR CODE HERE ***"
     labelCounter = countLabel(self.trainingLabels)
-    if len(self.legalLabels) == 10:
-      # print "######################################"
+    if len(self.legalLabels) > 1:
+
+      # CALCULATE THE PROBABILITY OF THE DATUM FOR EACH LABEL
       for i in range(len(self.legalLabels)):
+
+        # GET THE PRIOR PROBABILITY
         floatPriorProb = float(labelCounter[i]) / self.size
-        logJoint[i] = -(math.log(floatPriorProb,10) + calculateLabelLogProbForDigits(datum, i, self.probabilityTables))
-      #   print "logJoint[" + str(i) + "] = " + str(logJoint[i])
-      # print "######################################"
-    else:
-      for i in range(len(self.legalLabels)):
-        floatPriorProb = float(labelCounter[i]) / self.size
-        # print self.size
-        # print labelCounter[i]
-        # print floatPriorProb
-        logJoint[i] = floatPriorProb * calculateLabelLogProbForDigits(datum, i, self.probabilityTables)
-        #print logJoint[i]
+
+        # ADD THE LOG PRIOR PROBABILITY TO THE LOG
+        logJoint[i] = (math.log(floatPriorProb,10) + calculateLabelLogProb(datum, i, self.probabilityTables))
+
+    # RETURN A LIST OF PROBABILITIES
+    # [PROB(DATUM=0), PROB(DATUM=1), PROB(DATUM=2), .... PROB(DATUM=9]
     return logJoint
   
   def findHighOddsFeatures(self, label1, label2):
