@@ -55,7 +55,28 @@ class MiraClassifier:
     representing a vector of values.
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    w = util.Counter()
+
+    for iteration in range(self.max_iterations):
+      for i in range(len(trainingData)):
+        for l in self.legalLabels:
+          w[l] = trainingData[i].__mul__(self.weights[l])
+        if not (trainingLabels[i] == w.argMax()):
+          w_sub_y = self.weights[w.argMax()]
+          w_sub_y_star = self.weights[trainingLabels[i]]
+          f = trainingData[i]
+          tou_numerator = (w_sub_y - w_sub_y_star) * f + 1.0
+          tou_denominator = ((f).__mul__(f)).__mul__(2.0)
+          tou = tou_numerator.__div__(tou_denominator)
+
+          tou_star = min(tou, 0.01)
+
+          td_keys = trainingData[i].keys()
+          tou_fx = util.Counter()
+          for key in td_keys:
+            tou_fx[key] = tou_star * trainingData[i][key]
+          self.weights[trainingLabels[i]].__radd__(tou_fx)
+          self.weights[w.argMax()].__sub__(tou_fx)
 
   def classify(self, data ):
     """
