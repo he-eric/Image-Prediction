@@ -22,7 +22,7 @@ import util
 # Digits max training size = 5000
 # Digits max testing size = 1000
 
-TEST_SET_SIZE = 100
+TEST_SET_SIZE = 1000
 DIGIT_DATUM_HEIGHT=28
 DIGIT_DATUM_WIDTH=28
 FACE_DATUM_WIDTH=60
@@ -305,74 +305,83 @@ USAGE_STRING = """
 # Main harness code
 
 def runClassifier(args, options):
-
-  print "runClassifier"
-  featureFunction = args['featureFunction']
-  classifier = args['classifier']
-  printImage = args['printImage']
-
-  # Load data  
+  # Load data
   numTraining = options.training
   numTest = options.test
 
-  if(options.data=="faces"):
-    rawTrainingData = samples.loadDataFile("facedata/facedatatrain", numTraining,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
-    trainingLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTraining)
-    #rawValidationData = samples.loadDataFile("facedata/facedatatrain", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
-    #validationLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTest)
-    rawTestData = samples.loadDataFile("facedata/facedatatest", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
-    testLabels = samples.loadLabelsFile("facedata/facedatatestlabels", numTest)
-  else:
-    rawTrainingData = samples.loadDataFile("digitdata/trainingimages", numTraining,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
-    trainingLabels = samples.loadLabelsFile("digitdata/traininglabels", numTraining)
-    #rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
-    #validationLabels = samples.loadLabelsFile("digitdata/validationlabels", numTest)
-    rawTestData = samples.loadDataFile("digitdata/testimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
-    testLabels = samples.loadLabelsFile("digitdata/testlabels", numTest)
-    
-  
-  # Extract features
-  print "Extracting features..."
-  trainingData = map(featureFunction, rawTrainingData)
+  iteration = 10
+  layer = 0.1
 
-  #validationData = map(featureFunction, rawValidationData)
-  testData = map(featureFunction, rawTestData)
+  while (iteration > 0):
 
-  #print featureFunction
+    print "runClassifier on " + str((10 - iteration + 1) * 10) + "%"
+    iteration-=1
+    layeredNumTraining = (int)(numTraining * layer)
 
-  # Conduct training and testing
-  print "Training..."
-  classifier.train(trainingData, trainingLabels, trainingData, trainingLabels)
-  #print "Validating..."
-  #guesses = classifier.classify(validationData)
-  #print "guesses..."
-  # print guesses
-  # print ""
-  #correct = [guesses[i] == validationLabels[i] for i in range(len(validationLabels))].count(True)
-  #print str(correct), ("correct out of " + str(len(validationLabels)) + " (%.1f%%).") % (100.0 * correct / len(validationLabels))
-  print "Testing..."
-  guesses = classifier.classify(testData)
-  correct = [guesses[i] == testLabels[i] for i in range(len(testLabels))].count(True)
-  print str(correct), ("correct out of " + str(len(testLabels)) + " (%.1f%%).") % (100.0 * correct / len(testLabels))
-  analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
-  
-  # do odds ratio computation if specified at command line
-  if((options.odds) & (options.classifier == "naiveBayes" or (options.classifier == "nb")) ):
-    label1, label2 = options.label1, options.label2
-    features_odds = classifier.findHighOddsFeatures(label1,label2)
-    if(options.classifier == "naiveBayes" or options.classifier == "nb"):
-      string3 = "=== Features with highest odd ratio of label %d over label %d ===" % (label1, label2)
+    featureFunction = args['featureFunction']
+    classifier = args['classifier']
+    printImage = args['printImage']
+
+    if(options.data=="faces"):
+      rawTrainingData = samples.loadDataFile("facedata/facedatatrain", layeredNumTraining,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
+      trainingLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", layeredNumTraining)
+      #rawValidationData = samples.loadDataFile("facedata/facedatatrain", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
+      #validationLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTest)
+      rawTestData = samples.loadDataFile("facedata/facedatatest", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
+      testLabels = samples.loadLabelsFile("facedata/facedatatestlabels", numTest)
     else:
-      string3 = "=== Features for which weight(label %d)-weight(label %d) is biggest ===" % (label1, label2)    
-      
-    print string3
-    printImage(features_odds)
+      rawTrainingData = samples.loadDataFile("digitdata/trainingimages", layeredNumTraining,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+      trainingLabels = samples.loadLabelsFile("digitdata/traininglabels", layeredNumTraining)
+      #rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+      #validationLabels = samples.loadLabelsFile("digitdata/validationlabels", numTest)
+      rawTestData = samples.loadDataFile("digitdata/testimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+      testLabels = samples.loadLabelsFile("digitdata/testlabels", numTest)
 
-  if((options.weights) & (options.classifier == "perceptron")):
-    for l in classifier.legalLabels:
-      features_weights = classifier.findHighWeightFeatures(l)
-      print ("=== Features with high weight for label %d ==="%l)
-      printImage(features_weights)
+
+    # Extract features
+    print "Extracting features..."
+    trainingData = map(featureFunction, rawTrainingData)
+
+    #validationData = map(featureFunction, rawValidationData)
+    testData = map(featureFunction, rawTestData)
+
+    #print featureFunction
+
+    # Conduct training and testing
+    print "Training..."
+    classifier.train(trainingData, trainingLabels, trainingData, trainingLabels)
+    #print "Validating..."
+    #guesses = classifier.classify(validationData)
+    #print "guesses..."
+    # print guesses
+    # print ""
+    #correct = [guesses[i] == validationLabels[i] for i in range(len(validationLabels))].count(True)
+    #print str(correct), ("correct out of " + str(len(validationLabels)) + " (%.1f%%).") % (100.0 * correct / len(validationLabels))
+    print "Testing..."
+    guesses = classifier.classify(testData)
+    correct = [guesses[i] == testLabels[i] for i in range(len(testLabels))].count(True)
+    print str(correct), ("correct out of " + str(len(testLabels)) + " (%.1f%%).") % (100.0 * correct / len(testLabels))
+    #analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
+
+    # do odds ratio computation if specified at command line
+    if((options.odds) & (options.classifier == "naiveBayes" or (options.classifier == "nb")) ):
+      label1, label2 = options.label1, options.label2
+      features_odds = classifier.findHighOddsFeatures(label1,label2)
+      if(options.classifier == "naiveBayes" or options.classifier == "nb"):
+        string3 = "=== Features with highest odd ratio of label %d over label %d ===" % (label1, label2)
+      else:
+        string3 = "=== Features for which weight(label %d)-weight(label %d) is biggest ===" % (label1, label2)
+
+      print string3
+      printImage(features_odds)
+
+    if((options.weights) & (options.classifier == "perceptron")):
+      for l in classifier.legalLabels:
+        features_weights = classifier.findHighWeightFeatures(l)
+        print ("=== Features with high weight for label %d ==="%l)
+        printImage(features_weights)
+
+    layer = layer + 0.1
 
 if __name__ == '__main__':
   # Read input

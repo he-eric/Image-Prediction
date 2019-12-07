@@ -8,7 +8,24 @@
 
 # Perceptron implementation
 import util
+import random
 PRINT = True
+
+def defineWeights(weights, legalLabels):
+  for label in legalLabels:
+    weights[label] = util.Counter()  # this is the data-structure you should use
+
+def defineBias(bias, legalLabels):
+  for label in legalLabels:
+    bias.append(random.uniform(-1, 1))
+
+def randomWeights(weights, features):
+  for keys in features:
+    weights[keys] = random.uniform(-1, 1)
+
+def randomBias(bias, legalLabels):
+  for label in legalLabels:
+    bias[label] = random.uniform(-1,1)
 
 class PerceptronClassifier:
   """
@@ -22,13 +39,14 @@ class PerceptronClassifier:
     self.type = "perceptron"
     self.max_iterations = max_iterations
     self.weights = {}
-    for label in legalLabels:
-      self.weights[label] = util.Counter() # this is the data-structure you should use
+    self.bias = []
+    defineWeights(self.weights, self.legalLabels)
+    defineBias(self.bias, self.legalLabels)
 
   def setWeights(self, weights):
     assert len(weights) == len(self.legalLabels);
     self.weights == weights;
-      
+
   def train( self, trainingData, trainingLabels, validationData, validationLabels ):
     """
     The training loop for the perceptron passes through the training data several
@@ -40,8 +58,12 @@ class PerceptronClassifier:
     datum is a counter from features to values for those features
     (and thus represents a vector a values).
     """
-    
+
+    defineWeights(self.weights, self.legalLabels)
+    randomBias(self.bias, self.legalLabels)
     self.features = trainingData[0].keys() # could be useful later
+    # for i in self.legalLabels:
+    #   randomWeights(self.weights[i], self.features)
     # DO NOT ZERO OUT YOUR WEIGHTS BEFORE STARTING TRAINING, OR
     # THE AUTOGRADER WILL LIKELY DEDUCT POINTS.
     counter = util.Counter()
@@ -49,10 +71,12 @@ class PerceptronClassifier:
       print "Starting iteration ", iteration, "..."
       for i in range(len(trainingData)):
         for j in self.legalLabels:
-          counter[j] = trainingData[i].__mul__(self.weights[j])
+          counter[j] = trainingData[i].__mul__(self.weights[j]) + self.bias[j]
         if not trainingLabels[i] == counter.argMax():
           self.weights[trainingLabels[i]].__radd__(trainingData[i])
           self.weights[counter.argMax()].__sub__(trainingData[i])
+          self.bias[trainingLabels[i]]+=1
+          self.bias[counter.argMax()]-=1
 
   def classify(self, data ):
     """

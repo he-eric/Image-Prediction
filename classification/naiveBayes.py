@@ -194,6 +194,7 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
   def trainAndTune(self, trainingData, trainingLabels, validationData, validationLabels, kgrid):
 
     "*** YOUR CODE HERE ***"
+    self.probabilityTables = []
     # SET THE SIZE OF THE TRAINING DATA
     self.size = len(trainingData)
     # SET THE TRAINING LABELS
