@@ -337,10 +337,10 @@ def runClassifier(args, options):
   numTraining = options.training
   numTest = options.test
 
-  iteration = 1
+  iteration = 10
   trainingTime = []
   correctPercentage = []
-  layer = 1
+  layer = 0.1
 
   if (options.data == "faces"):
     f_rawTrainingData = samples.loadDataFile("facedata/facedatatrain", numTraining, FACE_DATUM_WIDTH,
