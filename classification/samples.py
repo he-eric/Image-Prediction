@@ -118,12 +118,13 @@ import random
 def loadRandomly(percentage, items, labels):
   percentageOfItems = []
   percentageOfLabels = []
-  loaded = list(range(0,len(items)))
+  loaded = list(range(0, len(labels)))
   while (percentage != 0):
     index = random.randrange(0, len(loaded))
-    percentageOfItems.append(items[index])
-    percentageOfLabels.append(labels[index])
-    loaded.remove(loaded[index])
+    #print index
+    percentageOfItems.append(items[loaded[index]])
+    percentageOfLabels.append(labels[loaded[index]])
+    del loaded[index]
     percentage-=1
   # print len(loaded)
   return percentageOfItems, percentageOfLabels

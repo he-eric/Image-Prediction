@@ -23,7 +23,7 @@ class MiraClassifier:
     self.automaticTuning = False 
     self.C = 0.001
     self.legalLabels = legalLabels
-    self.max_iterations = max_iterations
+    self.max_iterations = 5
     self.initializeWeightsToZero()
 
   def initializeWeightsToZero(self):
@@ -58,6 +58,7 @@ class MiraClassifier:
     w = util.Counter()
 
     for iteration in range(self.max_iterations):
+      print "Starting iteration ", iteration, "..."
       for i in range(len(trainingData)):
         for l in self.legalLabels:
           w[l] = trainingData[i].__mul__(self.weights[l])
@@ -69,7 +70,7 @@ class MiraClassifier:
           tou_denominator = ((f).__mul__(f)).__mul__(2.0)
           tou = tou_numerator.__div__(tou_denominator)
 
-          tou_star = min(tou, 0.01)
+          tou_star = min(tou, self.C)
 
           td_keys = trainingData[i].keys()
           tou_fx = util.Counter()

@@ -220,9 +220,10 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
         for datum in list_of_datums:
           sum_datum.__radd__(datum)
         for key in sum_datum:
+          sum_datum[key]+=1
           if sum_datum[key] == 0:
-            sum_datum[key] == 1.0 / len(list_of_datums)
-          sum_datum[key] = float(sum_datum[key]) / len(list_of_datums)
+            sum_datum[key] == 1.0 / (len(list_of_datums))
+          sum_datum[key] = float(sum_datum[key]) / (len(list_of_datums)+1)
 
         self.probabilityTables.append(sum_datum)
         

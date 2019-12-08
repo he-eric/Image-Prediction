@@ -37,7 +37,7 @@ class PerceptronClassifier:
   def __init__( self, legalLabels, max_iterations):
     self.legalLabels = legalLabels
     self.type = "perceptron"
-    self.max_iterations = 20
+    self.max_iterations = 5
     self.weights = {}
     self.bias = []
     defineWeights(self.weights, self.legalLabels)
@@ -73,7 +73,7 @@ class PerceptronClassifier:
         for j in self.legalLabels:
           # counter = dict
           # associate a label with a f(x)
-          counter[j] = trainingData[i].__mul__(self.weights[j]) + self.bias[j]
+          counter[j] = trainingData[i].__mul__(self.weights[j]) #+ self.bias[j]
         if not trainingLabels[i] == counter.argMax():
           self.weights[trainingLabels[i]].__radd__(trainingData[i])
           self.weights[counter.argMax()].__sub__(trainingData[i])

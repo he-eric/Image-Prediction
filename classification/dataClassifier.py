@@ -30,6 +30,33 @@ FACE_DATUM_WIDTH=60
 FACE_DATUM_HEIGHT=70
 
 
+def mean(data):
+  """Return the sample arithmetic mean of data."""
+  n = len(data)
+  if n < 1:
+    raise ValueError('mean requires at least one data point')
+  return sum(data) / n  # in Python 2 use sum(data)/float(n)
+
+
+def _ss(data):
+  """Return sum of square deviations of sequence data."""
+  c = mean(data)
+  ss = sum((x - c) ** 2 for x in data)
+  return ss
+
+
+def stddev(data, ddof=0):
+  """Calculates the population standard deviation
+  by default; specify ddof=1 to compute the sample
+  standard deviation."""
+  n = len(data)
+  if n < 2:
+    raise ValueError('variance requires at least two data points')
+  ss = _ss(data)
+  pvar = ss / (n - ddof)
+  return pvar ** 0.5
+
+
 def basicFeatureExtractorDigit(datum):
   """
   Returns a set of pixel features indicating whether
@@ -338,12 +365,18 @@ def runClassifier(args, options):
   f.write("{} training\n".format(options.training))
   f.write("{} testing\n".format(options.test))
 
+  rawTrainingData = []
+  trainingLabels = []
+
   while (iteration > 0):
 
     print "runClassifier on " + str((10 - iteration + 1) * 10) + "%"
     iteration-=1
     layeredNumTraining = (int)(numTraining * layer)
-    # rawTrainingData, trainingLabels =samples.loadRandomly(layeredNumTraining, f_rawTrainingData, f_trainingLabels)
+    # rawTrainingData, trainingLabels = samples.loadRandomly(451, f_rawTrainingData, f_trainingLabels)
+    # rawTrainingData+=chunkTrainingData
+    # trainingLabels+=chunkTrainingLabels
+
     rawTrainingData, trainingLabels = samples.loadPercentage(layeredNumTraining, f_rawTrainingData, f_trainingLabels)
 
     featureFunction = args['featureFunction']
@@ -364,7 +397,7 @@ def runClassifier(args, options):
     start_stamp = time.clock()
     classifier.train(trainingData, trainingLabels, trainingData, trainingLabels)
     end_stamp = time.clock()
-    trainingTime.append( str(end_stamp - start_stamp) )
+    trainingTime.append( (end_stamp - start_stamp) )
 
     #print "Validating..."
     #guesses = classifier.classify(validationData)
@@ -377,7 +410,7 @@ def runClassifier(args, options):
     guesses = classifier.classify(testData)
     correct = [guesses[i] == testLabels[i] for i in range(len(testLabels))].count(True)
     print str(correct), ("correct out of " + str(len(testLabels)) + " (%.1f%%).") % (100.0 * correct / len(testLabels))
-    correctPercentage.append( str(100.0 * correct / len(testLabels)) )
+    correctPercentage.append( (100.0 * correct / len(testLabels)) )
     #analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
 
     # do odds ratio computation if specified at command line
@@ -400,6 +433,10 @@ def runClassifier(args, options):
 
     layer = layer + 0.1
 
+  # print "time stddev " + str(stddev(trainingTime, ddof=0))
+  # print "pred stddev " + str(stddev(correctPercentage, ddof=0))
+  # print "time mean " + str(mean(trainingTime))
+  # print "pred mean " + str(mean(correctPercentage))
   f.write("{}\n".format(trainingTime))
   f.write("{}\n\n".format(correctPercentage))
   f.close()
