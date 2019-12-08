@@ -114,6 +114,23 @@ def loadDataFile(filename, n,width,height):
     items.append(Datum(data,DATUM_WIDTH,DATUM_HEIGHT))
   return items
 
+import random
+def loadRandomly(percentage, items, labels):
+  percentageOfItems = []
+  percentageOfLabels = []
+  loaded = list(range(0,len(items)))
+  while (percentage != 0):
+    index = random.randrange(0, len(loaded))
+    percentageOfItems.append(items[index])
+    percentageOfLabels.append(labels[index])
+    loaded.remove(loaded[index])
+    percentage-=1
+  # print len(loaded)
+  return percentageOfItems, percentageOfLabels
+
+def loadPercentage(percentage, items, labels):
+  return items[:percentage], labels[:percentage]
+
 import zipfile
 import os
 def readlines(filename):

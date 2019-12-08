@@ -16,13 +16,14 @@ import mira
 import samples
 import sys
 import util
+import time
 
 # Faces max training size = 451
 # Faces max testing size = 100
 # Digits max training size = 5000
 # Digits max testing size = 1000
 
-TEST_SET_SIZE = 1000
+TEST_SET_SIZE = 100
 DIGIT_DATUM_HEIGHT=28
 DIGIT_DATUM_WIDTH=28
 FACE_DATUM_WIDTH=60
@@ -309,37 +310,48 @@ def runClassifier(args, options):
   numTraining = options.training
   numTest = options.test
 
-  iteration = 10
-  layer = 0.1
+  iteration = 1
+  trainingTime = []
+  correctPercentage = []
+  layer = 1
+
+  if (options.data == "faces"):
+    f_rawTrainingData = samples.loadDataFile("facedata/facedatatrain", numTraining, FACE_DATUM_WIDTH,
+                                           FACE_DATUM_HEIGHT)
+    f_trainingLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTraining)
+    # rawValidationData = samples.loadDataFile("facedata/facedatatrain", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
+    # validationLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTest)
+    rawTestData = samples.loadDataFile("facedata/facedatatest", numTest, FACE_DATUM_WIDTH, FACE_DATUM_HEIGHT)
+    testLabels = samples.loadLabelsFile("facedata/facedatatestlabels", numTest)
+  else:
+    f_rawTrainingData = samples.loadDataFile("digitdata/trainingimages", numTraining, DIGIT_DATUM_WIDTH,
+                                           DIGIT_DATUM_HEIGHT)
+    f_trainingLabels = samples.loadLabelsFile("digitdata/traininglabels", numTraining)
+    # rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
+    # validationLabels = samples.loadLabelsFile("digitdata/validationlabels", numTest)
+    rawTestData = samples.loadDataFile("digitdata/testimages", numTest, DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT)
+    testLabels = samples.loadLabelsFile("digitdata/testlabels", numTest)
+
+  f = open("training_time", "a")
+  f.write("Classifier: {}\n".format(options.classifier))
+  f.write("Data: {}\n".format(options.data))
+  f.write("{} training\n".format(options.training))
+  f.write("{} testing\n".format(options.test))
 
   while (iteration > 0):
 
     print "runClassifier on " + str((10 - iteration + 1) * 10) + "%"
     iteration-=1
     layeredNumTraining = (int)(numTraining * layer)
+    # rawTrainingData, trainingLabels =samples.loadRandomly(layeredNumTraining, f_rawTrainingData, f_trainingLabels)
+    rawTrainingData, trainingLabels = samples.loadPercentage(layeredNumTraining, f_rawTrainingData, f_trainingLabels)
 
     featureFunction = args['featureFunction']
     classifier = args['classifier']
     printImage = args['printImage']
 
-    if(options.data=="faces"):
-      rawTrainingData = samples.loadDataFile("facedata/facedatatrain", layeredNumTraining,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
-      trainingLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", layeredNumTraining)
-      #rawValidationData = samples.loadDataFile("facedata/facedatatrain", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
-      #validationLabels = samples.loadLabelsFile("facedata/facedatatrainlabels", numTest)
-      rawTestData = samples.loadDataFile("facedata/facedatatest", numTest,FACE_DATUM_WIDTH,FACE_DATUM_HEIGHT)
-      testLabels = samples.loadLabelsFile("facedata/facedatatestlabels", numTest)
-    else:
-      rawTrainingData = samples.loadDataFile("digitdata/trainingimages", layeredNumTraining,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
-      trainingLabels = samples.loadLabelsFile("digitdata/traininglabels", layeredNumTraining)
-      #rawValidationData = samples.loadDataFile("digitdata/validationimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
-      #validationLabels = samples.loadLabelsFile("digitdata/validationlabels", numTest)
-      rawTestData = samples.loadDataFile("digitdata/testimages", numTest,DIGIT_DATUM_WIDTH,DIGIT_DATUM_HEIGHT)
-      testLabels = samples.loadLabelsFile("digitdata/testlabels", numTest)
-
-
     # Extract features
-    print "Extracting features..."
+    #print "Extracting features..."
     trainingData = map(featureFunction, rawTrainingData)
 
     #validationData = map(featureFunction, rawValidationData)
@@ -349,7 +361,11 @@ def runClassifier(args, options):
 
     # Conduct training and testing
     print "Training..."
+    start_stamp = time.clock()
     classifier.train(trainingData, trainingLabels, trainingData, trainingLabels)
+    end_stamp = time.clock()
+    trainingTime.append( str(end_stamp - start_stamp) )
+
     #print "Validating..."
     #guesses = classifier.classify(validationData)
     #print "guesses..."
@@ -361,6 +377,7 @@ def runClassifier(args, options):
     guesses = classifier.classify(testData)
     correct = [guesses[i] == testLabels[i] for i in range(len(testLabels))].count(True)
     print str(correct), ("correct out of " + str(len(testLabels)) + " (%.1f%%).") % (100.0 * correct / len(testLabels))
+    correctPercentage.append( str(100.0 * correct / len(testLabels)) )
     #analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
 
     # do odds ratio computation if specified at command line
@@ -383,8 +400,17 @@ def runClassifier(args, options):
 
     layer = layer + 0.1
 
+  f.write("{}\n".format(trainingTime))
+  f.write("{}\n\n".format(correctPercentage))
+  f.close()
+
 if __name__ == '__main__':
   # Read input
-  args, options = readCommand( sys.argv[1:] ) 
-  # Run classifier
+  args, options = readCommand( sys.argv[1:] )
   runClassifier(args, options)
+  # Run classifier
+  # layer = .1
+  # for i in range(10):
+  #   runClassifier(args, options, layer)
+  #   layer+=.1
+

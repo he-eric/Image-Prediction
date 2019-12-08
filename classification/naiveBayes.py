@@ -118,7 +118,10 @@ def calculateLabelLogProb(datum, label, probTables):
     if (intPixelValue == 0):
       # IF VALUE AT THIS FEATURE/PIXEL EQUALS 0
       # GET THE PROBILITY OF LABEL 'X' WITH THIS FEATURE/PIXEL EQUAL TO 0
-      floatProb = labelProbTable[0][feature]
+      # floatProb = labelProbTable[0][feature]
+      floatProb = 1-labelProbTable[feature]
+      if floatProb == 0:
+        floatProb = 0.0001
 
       # TRANSFORM THE PROBABILITY WITH LOG
       floatLogProb = math.log(floatProb, 10)
@@ -128,7 +131,10 @@ def calculateLabelLogProb(datum, label, probTables):
     else:
       # IF VALUE AT THIS FEATURE/PIXEL EQUALS NOT 0
       # GET THE PROBILITY OF LABEL 'X' WITH THIS FEATURE/PIXEL EQUAL TO NOT 0
-      floatProb = labelProbTable[1][feature]
+      # floatProb = labelProbTable[1][feature]
+      floatProb = labelProbTable[feature]
+      if floatProb == 0:
+        floatProb = 0.0001
 
       # TRANSFORM THE PROBABILITY WITH LOG
       floatLogProb = math.log(floatProb, 10)
@@ -207,8 +213,18 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
     if len(self.legalLabels) > 1:
       # GENERATE A PROB TABLE FOR EACH LABEL (EG: 9 tables for digits; 2 tables for faces)
       for key in sortedDatums:
-        table = generateProbTable(sortedDatums[key], self.features)
-        self.probabilityTables.append(table)
+        #table = generateProbTable(sortedDatums[key], self.features)
+
+        list_of_datums = sortedDatums[key]
+        sum_datum = util.Counter()
+        for datum in list_of_datums:
+          sum_datum.__radd__(datum)
+        for key in sum_datum:
+          if sum_datum[key] == 0:
+            sum_datum[key] == 1.0 / len(list_of_datums)
+          sum_datum[key] = float(sum_datum[key]) / len(list_of_datums)
+
+        self.probabilityTables.append(sum_datum)
         
   def classify(self, testData):
     """
@@ -246,6 +262,8 @@ class NaiveBayesClassifier(classificationMethod.ClassificationMethod):
         floatPriorProb = float(labelCounter[i]) / self.size
 
         # ADD THE LOG PRIOR PROBABILITY TO THE LOG
+        if floatPriorProb == 0:
+          floatPriorProb = 1.0 / self.size
         logJoint[i] = (math.log(floatPriorProb,10) + calculateLabelLogProb(datum, i, self.probabilityTables))
 
     # RETURN A LIST OF PROBABILITIES
